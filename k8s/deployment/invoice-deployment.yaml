@@ -52,15 +52,6 @@ spec:
             memory: "300Mi"
             ephemeral-storage: "500Mi"
 
-        startupProbe:
-          httpGet:
-            path: /api/v1/invoices/health  
-            port: 3000
-            scheme: HTTP
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 24
-
         readinessProbe:
           httpGet:
             path: /api/v1/invoices/health

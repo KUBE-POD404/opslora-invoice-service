@@ -2,7 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: invoice-deployment
-  namespace: opslora-test-ns  
+  namespace: opslora-test-ns
+  labels:
+    app: invoices  
 
 spec:
   replicas: 2
@@ -32,6 +34,7 @@ spec:
       containers:
       - name: invoice-container
         image: kubectlandchill/sales-invoice-service:v1.1.0
+        imagePullPolicy: Always
 
         ports:
         - containerPort: 3000

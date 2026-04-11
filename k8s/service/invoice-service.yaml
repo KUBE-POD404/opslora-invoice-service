@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: invoice-service
   namespace: opslora-test-ns
+  labels:
+    app: invoices
 spec:
   type: ClusterIP
   selector:

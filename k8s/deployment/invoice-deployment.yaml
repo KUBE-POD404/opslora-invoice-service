@@ -21,6 +21,8 @@ spec:
       labels:
         app: invoice-microservice
     spec:
+      automountServiceAccountToken: false
+
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

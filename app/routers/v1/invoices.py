@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, status, Request
 from sqlalchemy.orm import Session
 
@@ -36,8 +38,8 @@ def health():
 def create_invoice_api(
     order_id: int,
     request: Request,
-    db: Session = Depends(get_db),
-    current_user = Depends(require_permission("invoice.create"))
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[object, Depends(require_permission("invoice.create"))]
 ):
 
     auth_header = request.headers.get("Authorization")
@@ -57,8 +59,8 @@ def create_invoice_api(
 @router.get("/{invoice_id}", response_model=InvoiceResponse)
 def get_invoice_api(
     invoice_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(require_permission("invoice.read"))
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[object, Depends(require_permission("invoice.read"))]
 ):
 
     return get_invoice(
@@ -75,8 +77,8 @@ def get_invoice_api(
 def list_invoice_api(
     status: str | None = None,
     order_id: int | None = None,
-    db: Session = Depends(get_db),
-    current_user = Depends(require_permission("invoice.read"))
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[object, Depends(require_permission("invoice.read"))]
 ):
 
     return list_invoices(
@@ -94,8 +96,8 @@ def list_invoice_api(
 def cancel_invoice_api(
     invoice_id: int,
     request: Request,
-    db: Session = Depends(get_db),
-    current_user = Depends(require_permission("invoice.cancel"))
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[object, Depends(require_permission("invoice.cancel"))]
 ):
 
     auth_header = request.headers.get("Authorization")
@@ -104,7 +106,7 @@ def cancel_invoice_api(
         db,
         invoice_id,
         current_user.org_id,
-        auth_header   
+        auth_header
     )
 
 
@@ -116,8 +118,8 @@ def update_invoice_status_api(
     invoice_id: int,
     payload: InvoiceStatusUpdate,
     request: Request,
-    db: Session = Depends(get_db),
-    current_user = Depends(require_permission("invoice.update"))
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[object, Depends(require_permission("invoice.update"))]
 ):
 
     auth_header = request.headers.get("Authorization")
@@ -127,5 +129,5 @@ def update_invoice_status_api(
         invoice_id,
         current_user.org_id,
         payload.status,
-        auth_header   
+        auth_header
     )

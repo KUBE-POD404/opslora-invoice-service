@@ -11,7 +11,7 @@ class InvoiceResponse(BaseModel):
     total: float
     due_date: date
     status: str
-    discount_type: Optional[str]
+    discount_type: Optional[str] = None
     discount_value: float
     created_at: datetime
 

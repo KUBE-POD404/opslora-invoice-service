@@ -7,7 +7,7 @@ on:
       - main
 
 concurrency:
-  group: customer-merge-build-${{ github.event.pull_request.number }}
+  group: invoice-merge-build-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 permissions:
@@ -115,7 +115,7 @@ jobs:
             echo "Report URL: '${{ needs.docker-build.outputs.report_url }}'"
 
         - name: Send image pipeline notification
-          uses: ./.github/actions/send-notification
+          uses: ./.github/actions/notification-action
           with:
             pipeline_name: ${{ github.workflow }}
             repository_name: ${{ github.repository }}

@@ -1,0 +1,31 @@
+# env files
+.env
+.env.local
+.env.production
+*/.env
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# venv
+venv/
+.venv/
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# vscode
+.vscode/
+
+# build
+dist/
+build/
+
+permission-format.txt

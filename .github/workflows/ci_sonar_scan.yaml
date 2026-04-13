@@ -1,4 +1,4 @@
-name: Sonar Code Quality Invoice
+name: Sonar Code Quality
 
 on:
   workflow_call:

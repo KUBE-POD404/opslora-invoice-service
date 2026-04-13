@@ -1,24 +1,29 @@
-FROM python:3.13-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+FROM dhi.io/python:3.13-dev AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+ENV PATH="/app/venv/bin:$PATH"
+
+RUN python -m venv /app/venv
 
 COPY requirements.txt .
 
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    /app/venv/bin/pip install -r requirements.txt
 
-COPY app/ ./app/
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+
+FROM dhi.io/python:3.13
+
+WORKDIR /app
+
+ENV PATH="/app/venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+
+COPY --from=builder --chown=0:0 --chmod=0555 /app/venv /app/venv
+COPY --chown=0:0 --chmod=0555 app/ ./app/
+
+USER 10001
 
 EXPOSE 3000
 
-CMD ["./entrypoint.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]

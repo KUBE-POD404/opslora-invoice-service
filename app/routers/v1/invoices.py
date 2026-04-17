@@ -75,10 +75,10 @@ def get_invoice_api(
 # -----------------------------
 @router.get("/", response_model=list[InvoiceResponse])
 def list_invoice_api(
-    status: str | None = None,
-    order_id: int | None = None,
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[object, Depends(require_permission("invoice.read"))]
+    current_user: Annotated[object, Depends(require_permission("invoice.read"))],
+    status: str | None = None,
+    order_id: int | None = None
 ):
 
     return list_invoices(

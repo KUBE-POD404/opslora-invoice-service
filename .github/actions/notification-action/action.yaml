@@ -3,69 +3,31 @@ description: Send email and Slack notification
 
 inputs:
   pipeline_name:
-    description: Name of the pipeline
     required: true
   repository_name:
-    description: Name of the repository
     required: true
   failure_reason:
-    description: Reason for the failure
     required: true
   author:
-    description: Author of the pull request
     required: true
   smtp_username:
-    description: SMTP server username
     required: true
   smtp_password:
-    description: SMTP server password
     required: true
   mail_from:
-    description: Email address to send from
     required: true
   mail_to:
-    description: Email address to send to
     required: true
   slack_webhook:
-    description: Slack incoming webhook URL
-    required: true
-  tool:
-    description: Scanning tool name
     required: true
   workflow_url:
-    description: URL of the workflow run
     required: true
-  sonar_host_url:
-    description: SonarQube host URL
-    required: false
-  sonar_project_key:
-    description: SonarQube project key
-    required: false
-  snyk_org:
-    description: Snyk organization identifier
-    required: false
-  snyk_project_name:
-    description: Snyk project name
-    required: false
-  snyk_project_id:
-    description: Snyk project ID
-    required: false
+  report_url:
+    required: true
 
 runs:
   using: composite
   steps:
-
-    - name: Build Report URL
-      id: build_url
-      shell: bash
-      run: |
-        if [ "${{ inputs.tool }}" = "sonar" ]; then
-          echo "url=${{ inputs.sonar_host_url }}/dashboard?id=${{ inputs.sonar_project_key }}" >> $GITHUB_OUTPUT
-        elif [ "${{ inputs.tool }}" = "snyk" ]; then
-          echo "url=https://app.snyk.io/org/${{ inputs.snyk_org }}/projects/${{ inputs.snyk_project_id }}" >> $GITHUB_OUTPUT
-        else
-          echo "url=${{ inputs.workflow_url }}" >> $GITHUB_OUTPUT
-        fi
 
     - name: Send email
       uses: hilarion5/send-mail@v1
@@ -89,7 +51,7 @@ runs:
 
             <br/>
 
-            <a href="${{ steps.build_url.outputs.url }}"
+            <a href="${{ inputs.report_url }}"
                style="padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">
                View Report
             </a>
@@ -109,7 +71,7 @@ runs:
         webhook-type: incoming-webhook
         payload: |
           attachments:
-            - color: "#dc2626"  # red failure color
+            - color: "#dc2626"
               blocks:
 
                 - type: header
@@ -117,14 +79,12 @@ runs:
                     type: plain_text
                     text: "CI Pipeline Failure"
 
-                - type: context
-                  elements:
+                - type: section
+                  fields:
                     - type: mrkdwn
-                      text: "*Pipeline:* ${{ inputs.pipeline_name }}"
+                      text: "*Pipeline*\n${{ inputs.pipeline_name }}"
                     - type: mrkdwn
-                      text: "*Repository:* ${{ inputs.repository_name }}"
-
-                - type: divider
+                      text: "*Repository*\n${{ inputs.repository_name }}"
 
                 - type: section
                   fields:
@@ -133,15 +93,13 @@ runs:
                     - type: mrkdwn
                       text: "*Failure Reason*\n${{ inputs.failure_reason }}"
 
-                - type: divider
-
                 - type: actions
                   elements:
                     - type: button
                       text:
                         type: plain_text
                         text: "View Report"
-                      url: "${{ steps.build_url.outputs.url }}"
+                      url: "${{ inputs.report_url }}"
                       style: danger
 
                     - type: button

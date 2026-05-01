@@ -1,7 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from sqlalchemy.orm import Session
-import os
 import logging
 
 from app.models.invoice import Invoice
@@ -9,11 +8,12 @@ from app.exceptions.custom_exceptions import NotFoundException, ConflictExceptio
 from app.utils.service_client import authenticated_get
 from app.core.celery_app import celery
 from app.core.logging_config import request_id_ctx
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-ORDER_SERVICE_URL = os.getenv("ORDER_SERVICE_URL")
-API_VERSION = os.getenv("API_VERSION", "/api/v1")
+ORDER_SERVICE_URL = settings.order_service_url
+API_VERSION = settings.api_version
 
 TAX_RATE = Decimal("0.18")
 

@@ -6,9 +6,13 @@
 
 # python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # venv
 venv/
@@ -23,9 +27,11 @@ Thumbs.db
 
 # vscode
 .vscode/
+.idea/
 
 # build
 dist/
 build/
+*.egg-info/
 
 permission-format.txt

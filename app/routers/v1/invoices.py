@@ -20,14 +20,6 @@ router = APIRouter(prefix="/invoices", tags=["Invoices"])
 
 
 # -----------------------------
-# HEALTH
-# -----------------------------
-@router.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-# -----------------------------
 # CREATE INVOICE
 # -----------------------------
 @router.post(

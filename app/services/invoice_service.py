@@ -32,7 +32,21 @@ def fetch_order(order_id: int, auth_header: str):
     if response.status_code != 200:
         raise NotFoundException("Order not found")
 
-    return response.json()
+    data = response.json()
+    required_fields = ("status", "customer_email", "customer_name", "items")
+    if any(data.get(field) in (None, "") for field in required_fields):
+        raise ConflictException("Invalid order service response")
+
+    if not isinstance(data["items"], list) or not data["items"]:
+        raise ConflictException("Invalid order service response")
+
+    for item in data["items"]:
+        if item.get("product_name") in (None, ""):
+            raise ConflictException("Invalid order service response")
+        if item.get("quantity") is None or item.get("unit_price") is None:
+            raise ConflictException("Invalid order service response")
+
+    return data
 
 
 # -----------------------------

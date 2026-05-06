@@ -21,6 +21,7 @@ class InvoiceLineResponse(BaseModel):
 
 
 class InvoiceTaxSummaryResponse(BaseModel):
+    tax_component: str
     tax_rate: float
     taxable_value: float
     tax_amount: float
@@ -31,12 +32,14 @@ class InvoiceTaxSummaryResponse(BaseModel):
 class InvoiceResponse(BaseModel):
     id: int
     invoice_number: Optional[str] = None
+    invoice_template_key: Optional[str] = None
     order_id: int
     customer_id: Optional[int] = None
     customer_name: Optional[str] = None
     customer_email: Optional[str] = None
     customer_gstin: Optional[str] = None
     customer_place_of_supply: Optional[str] = None
+    seller_state: Optional[str] = None
     subtotal: float
     tax: float
     total: float

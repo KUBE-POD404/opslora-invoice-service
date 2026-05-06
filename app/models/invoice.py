@@ -12,6 +12,8 @@ class Invoice(Base):
     # Plain reference, no FK
     order_id = Column(Integer, nullable=False, unique=True)
     invoice_number = Column(String(50), nullable=True)
+    invoice_template_key = Column(String(100), nullable=True)
+    seller_state = Column(String(100), nullable=True)
 
     customer_id = Column(Integer, nullable=True)
     customer_name = Column(String(255), nullable=True)
@@ -74,6 +76,7 @@ class InvoiceTaxSummary(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=False)
+    tax_component = Column(String(20), nullable=False, default="IGST")
     tax_rate = Column(Numeric(5, 2), nullable=False)
     taxable_value = Column(Numeric(12, 2), nullable=False)
     tax_amount = Column(Numeric(12, 2), nullable=False)

@@ -22,6 +22,7 @@ class Settings:
     jwt_secret_key: str = _required("JWT_SECRET_KEY")
     rabbitmq_url: str = _required("RABBITMQ_URL")
     order_service_url: str = _required("ORDER_SERVICE_URL")
+    auth_service_url: str = _required("AUTH_SERVICE_URL")
     api_version: str = os.getenv("API_VERSION", "/api/v1")
 
     @property

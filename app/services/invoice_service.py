@@ -13,6 +13,7 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 ORDER_SERVICE_URL = settings.order_service_url
+AUTH_SERVICE_URL = settings.auth_service_url
 API_VERSION = settings.api_version
 
 # -----------------------------
@@ -46,6 +47,24 @@ def fetch_order(order_id: int, auth_header: str):
     return data
 
 
+def fetch_organization_settings(auth_header: str):
+    url = f"{AUTH_SERVICE_URL}{API_VERSION}/settings/organization"
+    logger.info("Fetching organization settings", extra={"url": url})
+    response = authenticated_get(url, auth_header)
+
+    if response.status_code != 200:
+        raise ConflictException("Failed to fetch organization settings")
+
+    data = response.json()
+    return {
+        "invoice_prefix": data.get("invoice_prefix") or "INV",
+        "next_invoice_sequence": data.get("next_invoice_sequence") or 1,
+        "default_due_days": data.get("default_due_days") or 30,
+        "default_invoice_template": data.get("default_invoice_template") or "opslora_standard",
+        "seller_state": data.get("state"),
+    }
+
+
 def _money(value) -> Decimal:
     return Decimal(str(value or "0")).quantize(Decimal("0.01"))
 
@@ -54,8 +73,25 @@ def _tax_rate(value) -> Decimal:
     return Decimal(str(value or "0")).quantize(Decimal("0.01"))
 
 
-def _build_invoice_number(organization_id: int, invoice_id: int) -> str:
-    return f"INV-{organization_id}-{invoice_id:06d}"
+def _build_invoice_number(prefix: str, sequence: int, invoice_id: int) -> str:
+    return f"{prefix}-{sequence:06d}-{invoice_id:06d}"
+
+
+def _normalize_state(value: str | None) -> str | None:
+    if not value:
+        return None
+    return value.strip().lower()
+
+
+def _tax_components(seller_state: str | None, buyer_state: str | None, tax_rate: Decimal):
+    if tax_rate == Decimal("0.00"):
+        return [("NONE", Decimal("0.00"))]
+
+    if _normalize_state(seller_state) and _normalize_state(seller_state) == _normalize_state(buyer_state):
+        split_rate = (tax_rate / Decimal("2")).quantize(Decimal("0.01"))
+        return [("CGST", split_rate), ("SGST", split_rate)]
+
+    return [("IGST", tax_rate)]
 
 
 def attach_invoice_details(db: Session, invoice: Invoice):
@@ -90,6 +126,7 @@ def create_invoice(
     logger.info("Creating invoice", extra={"order_id": order_id})
 
     order_data = fetch_order(order_id, auth_header)
+    org_settings = fetch_organization_settings(auth_header)
 
     if order_data["status"] != "CONFIRMED":
         raise ConflictException("Invoice can be created only for CONFIRMED orders")
@@ -103,7 +140,9 @@ def create_invoice(
         raise ConflictException("Invoice already exists for this order")
 
     invoice_lines = []
-    tax_groups: dict[Decimal, dict[str, Decimal]] = {}
+    tax_groups: dict[tuple[str, Decimal], dict[str, Decimal]] = {}
+    buyer_state = order_data.get("customer_place_of_supply") or order_data.get("billing_state")
+    seller_state = org_settings["seller_state"]
 
     for item in order_data["items"]:
         quantity = _money(item["quantity"])
@@ -129,9 +168,14 @@ def create_invoice(
                 "line_total": line_total,
             }
         )
-        group = tax_groups.setdefault(tax_rate, {"taxable_value": Decimal("0.00"), "tax_amount": Decimal("0.00")})
-        group["taxable_value"] += taxable_value
-        group["tax_amount"] += tax_amount
+        for component, component_rate in _tax_components(seller_state, buyer_state, tax_rate):
+            component_tax_amount = (taxable_value * component_rate / Decimal("100")).quantize(Decimal("0.01"))
+            group = tax_groups.setdefault(
+                (component, component_rate),
+                {"taxable_value": Decimal("0.00"), "tax_amount": Decimal("0.00")},
+            )
+            group["taxable_value"] += taxable_value
+            group["tax_amount"] += component_tax_amount
 
     subtotal = sum(line["taxable_value"] for line in invoice_lines).quantize(Decimal("0.01"))
     tax = sum(line["tax_amount"] for line in invoice_lines).quantize(Decimal("0.01"))
@@ -153,6 +197,8 @@ def create_invoice(
     invoice = Invoice(
         organization_id=organization_id,
         order_id=order_id,
+        invoice_template_key=org_settings["default_invoice_template"],
+        seller_state=seller_state,
         customer_id=order_data.get("customer_id"),
         customer_name=order_data.get("customer_name"),
         customer_email=order_data.get("customer_email"),
@@ -170,22 +216,27 @@ def create_invoice(
         discount_type=discount_type,
         discount_value=discount_value,
         status="UNPAID",
-        due_date=(datetime.now(timezone.utc) + timedelta(days=30)).date(),
+        due_date=(datetime.now(timezone.utc) + timedelta(days=org_settings["default_due_days"])).date(),
         created_by_user_id=created_by_user_id,
         created_at=datetime.now(timezone.utc),
     )
 
     db.add(invoice)
     db.flush()
-    invoice.invoice_number = _build_invoice_number(organization_id, invoice.id)
+    invoice.invoice_number = _build_invoice_number(
+        org_settings["invoice_prefix"],
+        org_settings["next_invoice_sequence"],
+        invoice.id,
+    )
 
     for line in invoice_lines:
         db.add(InvoiceLine(invoice_id=invoice.id, **line))
 
-    for rate, summary in tax_groups.items():
+    for (component, rate), summary in tax_groups.items():
         db.add(
             InvoiceTaxSummary(
                 invoice_id=invoice.id,
+                tax_component=component,
                 tax_rate=rate,
                 taxable_value=summary["taxable_value"].quantize(Decimal("0.01")),
                 tax_amount=summary["tax_amount"].quantize(Decimal("0.01")),

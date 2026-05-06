@@ -46,13 +46,24 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
             "customer_email": "buyer@example.com",
             "customer_name": "Acme Buyer",
             "customer_gstin": "29ABCDE1234F1Z5",
+            "customer_place_of_supply": "Karnataka",
             "items": [
                 {"id": 1, "product_name": "Steel Bolt", "quantity": 2, "unit_price": 100, "tax_rate": 18},
                 {"id": 2, "product_name": "Washer", "quantity": 1, "unit_price": 50, "tax_rate": 5},
             ],
         }
 
+    def fake_fetch_settings(auth_header):
+        return {
+            "invoice_prefix": "SMK",
+            "next_invoice_sequence": 9,
+            "default_due_days": 15,
+            "default_invoice_template": "opslora_standard",
+            "seller_state": "Karnataka",
+        }
+
     monkeypatch.setattr("app.services.invoice_service.fetch_order", fake_fetch_order)
+    monkeypatch.setattr("app.services.invoice_service.fetch_organization_settings", fake_fetch_settings)
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_current_user
@@ -67,10 +78,11 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
         assert invoice["subtotal"] == 250.0
         assert invoice["tax"] == 38.5
         assert invoice["total"] == 288.5
-        assert invoice["invoice_number"] == "INV-20-000001"
+        assert invoice["invoice_number"] == "SMK-000009-000001"
+        assert invoice["invoice_template_key"] == "opslora_standard"
         assert invoice["customer_gstin"] == "29ABCDE1234F1Z5"
         assert len(invoice["lines"]) == 2
-        assert len(invoice["tax_summary"]) == 2
+        assert len(invoice["tax_summary"]) == 4
         assert invoice["status"] == "UNPAID"
         assert len(no_op_celery.tasks) == 1
 

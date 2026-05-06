@@ -12,7 +12,7 @@ os.environ.setdefault("ORDER_SERVICE_URL", "http://order-service:3000")
 os.environ.setdefault("API_VERSION", "/api/v1")
 
 from app.database import Base  # noqa: E402
-from app.models.invoice import Invoice  # noqa: F401,E402
+from app.models.invoice import Invoice, InvoiceLine, InvoiceTaxSummary  # noqa: F401,E402
 
 
 @pytest.fixture()

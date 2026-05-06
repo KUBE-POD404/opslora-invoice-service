@@ -7,6 +7,7 @@ from app.database import Base, get_db
 from app.dependencies.auth import get_current_user
 from app.main import app
 from app.models.invoice import Invoice  # noqa: F401
+from app.models.invoice import InvoiceLine, InvoiceTaxSummary  # noqa: F401
 from app.security.jwt import TokenPayload
 
 
@@ -44,9 +45,10 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
             "status": "CONFIRMED",
             "customer_email": "buyer@example.com",
             "customer_name": "Acme Buyer",
+            "customer_gstin": "29ABCDE1234F1Z5",
             "items": [
-                {"product_name": "Steel Bolt", "quantity": 2, "unit_price": 100},
-                {"product_name": "Washer", "quantity": 1, "unit_price": 50},
+                {"id": 1, "product_name": "Steel Bolt", "quantity": 2, "unit_price": 100, "tax_rate": 18},
+                {"id": 2, "product_name": "Washer", "quantity": 1, "unit_price": 50, "tax_rate": 5},
             ],
         }
 
@@ -63,8 +65,12 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
         invoice = create_response.json()
         assert invoice["order_id"] == 101
         assert invoice["subtotal"] == 250.0
-        assert invoice["tax"] == 45.0
-        assert invoice["total"] == 295.0
+        assert invoice["tax"] == 38.5
+        assert invoice["total"] == 288.5
+        assert invoice["invoice_number"] == "INV-20-000001"
+        assert invoice["customer_gstin"] == "29ABCDE1234F1Z5"
+        assert len(invoice["lines"]) == 2
+        assert len(invoice["tax_summary"]) == 2
         assert invoice["status"] == "UNPAID"
         assert len(no_op_celery.tasks) == 1
 

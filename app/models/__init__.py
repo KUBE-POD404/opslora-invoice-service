@@ -1,3 +1,3 @@
-from app.models.invoice import Invoice
+from app.models.invoice import Invoice, InvoiceLine, InvoiceTaxSummary
 
-__all__ = ["Invoice"]
+__all__ = ["Invoice", "InvoiceLine", "InvoiceTaxSummary"]

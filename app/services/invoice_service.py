@@ -3,7 +3,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 import logging
 
-from app.models.invoice import Invoice
+from app.models.invoice import Invoice, InvoiceLine, InvoiceTaxSummary
 from app.exceptions.custom_exceptions import NotFoundException, ConflictException
 from app.utils.service_client import authenticated_get
 from app.core.celery_app import celery
@@ -14,9 +14,6 @@ logger = logging.getLogger(__name__)
 
 ORDER_SERVICE_URL = settings.order_service_url
 API_VERSION = settings.api_version
-
-TAX_RATE = Decimal("0.18")
-
 
 # -----------------------------
 # FETCH ORDER
@@ -49,6 +46,34 @@ def fetch_order(order_id: int, auth_header: str):
     return data
 
 
+def _money(value) -> Decimal:
+    return Decimal(str(value or "0")).quantize(Decimal("0.01"))
+
+
+def _tax_rate(value) -> Decimal:
+    return Decimal(str(value or "0")).quantize(Decimal("0.01"))
+
+
+def _build_invoice_number(organization_id: int, invoice_id: int) -> str:
+    return f"INV-{organization_id}-{invoice_id:06d}"
+
+
+def attach_invoice_details(db: Session, invoice: Invoice):
+    invoice.lines = (
+        db.query(InvoiceLine)
+        .filter(InvoiceLine.invoice_id == invoice.id)
+        .order_by(InvoiceLine.id.asc())
+        .all()
+    )
+    invoice.tax_summary = (
+        db.query(InvoiceTaxSummary)
+        .filter(InvoiceTaxSummary.invoice_id == invoice.id)
+        .order_by(InvoiceTaxSummary.tax_rate.asc())
+        .all()
+    )
+    return invoice
+
+
 # -----------------------------
 # CREATE INVOICE
 # -----------------------------
@@ -77,12 +102,39 @@ def create_invoice(
     if existing:
         raise ConflictException("Invoice already exists for this order")
 
-    subtotal = sum(
-        Decimal(item["quantity"]) * Decimal(item["unit_price"])
-        for item in order_data["items"]
-    ).quantize(Decimal("0.01"))
+    invoice_lines = []
+    tax_groups: dict[Decimal, dict[str, Decimal]] = {}
 
-    tax = (subtotal * TAX_RATE).quantize(Decimal("0.01"))
+    for item in order_data["items"]:
+        quantity = _money(item["quantity"])
+        unit_price = _money(item["unit_price"])
+        tax_rate = _tax_rate(item.get("tax_rate"))
+        taxable_value = (quantity * unit_price).quantize(Decimal("0.01"))
+        tax_amount = (taxable_value * tax_rate / Decimal("100")).quantize(Decimal("0.01"))
+        line_total = (taxable_value + tax_amount).quantize(Decimal("0.01"))
+
+        invoice_lines.append(
+            {
+                "order_item_id": item.get("id"),
+                "product_id": item.get("product_id"),
+                "sku": item.get("sku"),
+                "product_name": item["product_name"],
+                "hsn_sac_code": item.get("hsn_sac_code"),
+                "unit_of_measure": item.get("unit_of_measure"),
+                "quantity": quantity,
+                "unit_price": unit_price,
+                "tax_rate": tax_rate,
+                "taxable_value": taxable_value,
+                "tax_amount": tax_amount,
+                "line_total": line_total,
+            }
+        )
+        group = tax_groups.setdefault(tax_rate, {"taxable_value": Decimal("0.00"), "tax_amount": Decimal("0.00")})
+        group["taxable_value"] += taxable_value
+        group["tax_amount"] += tax_amount
+
+    subtotal = sum(line["taxable_value"] for line in invoice_lines).quantize(Decimal("0.01"))
+    tax = sum(line["tax_amount"] for line in invoice_lines).quantize(Decimal("0.01"))
 
     discount_amount = Decimal("0.00")
 
@@ -101,6 +153,17 @@ def create_invoice(
     invoice = Invoice(
         organization_id=organization_id,
         order_id=order_id,
+        customer_id=order_data.get("customer_id"),
+        customer_name=order_data.get("customer_name"),
+        customer_email=order_data.get("customer_email"),
+        customer_gstin=order_data.get("customer_gstin"),
+        customer_place_of_supply=order_data.get("customer_place_of_supply"),
+        billing_address_line1=order_data.get("billing_address_line1"),
+        billing_address_line2=order_data.get("billing_address_line2"),
+        billing_city=order_data.get("billing_city"),
+        billing_state=order_data.get("billing_state"),
+        billing_postal_code=order_data.get("billing_postal_code"),
+        billing_country=order_data.get("billing_country"),
         subtotal=subtotal,
         tax=tax,
         total=total,
@@ -113,6 +176,22 @@ def create_invoice(
     )
 
     db.add(invoice)
+    db.flush()
+    invoice.invoice_number = _build_invoice_number(organization_id, invoice.id)
+
+    for line in invoice_lines:
+        db.add(InvoiceLine(invoice_id=invoice.id, **line))
+
+    for rate, summary in tax_groups.items():
+        db.add(
+            InvoiceTaxSummary(
+                invoice_id=invoice.id,
+                tax_rate=rate,
+                taxable_value=summary["taxable_value"].quantize(Decimal("0.01")),
+                tax_amount=summary["tax_amount"].quantize(Decimal("0.01")),
+            )
+        )
+
     db.commit()
     db.refresh(invoice)
 
@@ -136,7 +215,7 @@ def create_invoice(
 
     logger.info("Invoice created event published", extra={"invoice_id": invoice.id})
 
-    return invoice
+    return attach_invoice_details(db, invoice)
 
 
 
@@ -154,7 +233,7 @@ def get_invoice(db: Session, invoice_id: int, organization_id: int):
     if not invoice:
         raise NotFoundException("Invoice not found")
 
-    return invoice
+    return attach_invoice_details(db, invoice)
 
 
 # -----------------------------
@@ -187,7 +266,7 @@ def cancel_invoice(db: Session, invoice_id: int, organization_id: int, auth_head
         queue="notification_queue"
     )
 
-    return invoice
+    return attach_invoice_details(db, invoice)
 
 
 # -----------------------------
@@ -253,7 +332,7 @@ def update_invoice_status(
             queue="notification_queue"
         )
 
-    return invoice
+    return attach_invoice_details(db, invoice)
 
 # -----------------------------
 # LIST INVOICES
@@ -270,4 +349,4 @@ def list_invoices(db: Session, organization_id, status=None, order_id=None):
     if order_id:
         query = query.filter(Invoice.order_id == order_id)
 
-    return query.order_by(Invoice.id.desc()).all()
+    return [attach_invoice_details(db, invoice) for invoice in query.order_by(Invoice.id.desc()).all()]

@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.database import Base
-from app.models import Invoice
+from app.models import Invoice, InvoiceLine, InvoiceTaxSummary
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

@@ -12,9 +12,22 @@ def confirmed_order():
         "status": "CONFIRMED",
         "customer_email": "buyer@example.com",
         "customer_name": "Buyer",
+        "customer_id": 42,
+        "customer_gstin": "29ABCDE1234F1Z5",
+        "customer_place_of_supply": "Karnataka",
         "items": [
-            {"product_name": "Item A", "quantity": 2, "unit_price": 100.0},
-            {"product_name": "Item B", "quantity": 1, "unit_price": 50.0},
+            {
+                "id": 1,
+                "product_id": 7,
+                "sku": "SKU-A",
+                "product_name": "Item A",
+                "hsn_sac_code": "998311",
+                "unit_of_measure": "PCS",
+                "quantity": 2,
+                "unit_price": 100.0,
+                "tax_rate": 18.0,
+            },
+            {"id": 2, "product_name": "Item B", "quantity": 1, "unit_price": 50.0, "tax_rate": 5.0},
         ],
     }
 
@@ -31,8 +44,13 @@ def test_create_invoice_calculates_subtotal_tax_total(db_session, monkeypatch, n
     )
 
     assert invoice.subtotal == Decimal("250.00")
-    assert invoice.tax == Decimal("45.00")
-    assert invoice.total == Decimal("295.00")
+    assert invoice.tax == Decimal("38.50")
+    assert invoice.total == Decimal("288.50")
+    assert invoice.invoice_number == "INV-1-000001"
+    assert invoice.customer_gstin == "29ABCDE1234F1Z5"
+    assert len(invoice.lines) == 2
+    assert invoice.lines[0].sku == "SKU-A"
+    assert len(invoice.tax_summary) == 2
     assert invoice.status == "UNPAID"
     assert no_op_celery.tasks[0][0][0] == "notification.send_invoice_created_email"
 

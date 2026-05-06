@@ -22,8 +22,8 @@ def order_payload():
         "status": "CONFIRMED",
         "total": 250.0,
         "items": [
-            {"id": 1, "product_name": "Steel Bolt", "quantity": 2, "unit_price": 100.0},
-            {"id": 2, "product_name": "Washer", "quantity": 1, "unit_price": 50.0},
+            {"id": 1, "product_name": "Steel Bolt", "quantity": 2, "unit_price": 100.0, "tax_rate": 18.0},
+            {"id": 2, "product_name": "Washer", "quantity": 1, "unit_price": 50.0, "tax_rate": 5.0},
         ],
     }
 

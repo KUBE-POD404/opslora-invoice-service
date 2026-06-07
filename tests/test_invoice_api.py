@@ -81,13 +81,18 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
     try:
         client = TestClient(app)
 
-        create_response = client.post("/api/v1/invoices/orders/101")
+        create_response = client.post(
+            "/api/v1/invoices/orders/101",
+            json={"discount_type": "FLAT", "discount_value": 10},
+        )
         assert create_response.status_code == 201
         invoice = create_response.json()
         assert invoice["order_id"] == 101
         assert invoice["subtotal"] == 250.0
         assert invoice["tax"] == 38.5
-        assert invoice["total"] == 288.5
+        assert invoice["total"] == 278.5
+        assert invoice["discount_type"] == "FLAT"
+        assert invoice["discount_value"] == 10.0
         assert invoice["invoice_number"] == "SMK-000009-000001"
         assert invoice["invoice_template_key"] == "opslora_standard"
         assert invoice["seller_legal_name"] == "Acme Seller Pvt Ltd"

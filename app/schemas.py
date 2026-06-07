@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
 from typing import Optional
 
@@ -62,6 +62,11 @@ class InvoiceResponse(BaseModel):
     tax_summary: list[InvoiceTaxSummaryResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class InvoiceCreateRequest(BaseModel):
+    discount_type: Optional[str] = Field(default=None, pattern="^(FLAT|PERCENT)$")
+    discount_value: float = 0
 
 
 class InvoiceStatus(str, Enum):

@@ -191,6 +191,7 @@ def create_invoice(
     tax = sum(line["tax_amount"] for line in invoice_lines).quantize(Decimal("0.01"))
 
     discount_amount = Decimal("0.00")
+    discount_value = _money(discount_value)
 
     if discount_type == "FLAT":
         discount_amount = discount_value

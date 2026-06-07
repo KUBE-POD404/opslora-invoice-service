@@ -39,6 +39,16 @@ def org_settings(state="Karnataka"):
         "default_due_days": 15,
         "default_invoice_template": "opslora_standard",
         "seller_state": state,
+        "legal_name": "Smoke Metal Works Pvt Ltd",
+        "display_name": "Smoke Metal Works",
+        "email": "billing@smoke.example",
+        "phone": "+91 98765 43210",
+        "tax_id": "29ABCDE1234F1Z5",
+        "address": "12 Foundry Road, Bengaluru",
+        "country": "India",
+        "default_invoice_terms": "Payment due within 15 days.",
+        "default_invoice_footer": "Thank you for choosing Smoke Metal Works.",
+        "round_off_enabled": True,
     }
 
 
@@ -60,6 +70,16 @@ def test_create_invoice_calculates_subtotal_tax_total(db_session, monkeypatch, n
     assert invoice.invoice_number == "SMK-000007-000001"
     assert invoice.invoice_template_key == "opslora_standard"
     assert invoice.seller_state == "Karnataka"
+    assert invoice.seller_legal_name == "Smoke Metal Works Pvt Ltd"
+    assert invoice.seller_display_name == "Smoke Metal Works"
+    assert invoice.seller_email == "billing@smoke.example"
+    assert invoice.seller_phone == "+91 98765 43210"
+    assert invoice.seller_tax_id == "29ABCDE1234F1Z5"
+    assert invoice.seller_address == "12 Foundry Road, Bengaluru"
+    assert invoice.seller_country == "India"
+    assert invoice.invoice_terms == "Payment due within 15 days."
+    assert invoice.invoice_footer == "Thank you for choosing Smoke Metal Works."
+    assert invoice.round_off_enabled is True
     assert invoice.customer_gstin == "29ABCDE1234F1Z5"
     assert len(invoice.lines) == 2
     assert invoice.lines[0].sku == "SKU-A"

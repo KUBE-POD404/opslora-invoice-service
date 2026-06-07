@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Numeric, Date, String, DateTime, CheckConstraint, ForeignKey
+from sqlalchemy import Column, Integer, Numeric, Date, String, DateTime, CheckConstraint, ForeignKey, Boolean
 from datetime import datetime, timezone
 from app.database import Base
 
@@ -13,7 +13,17 @@ class Invoice(Base):
     order_id = Column(Integer, nullable=False, unique=True)
     invoice_number = Column(String(50), nullable=True)
     invoice_template_key = Column(String(100), nullable=True)
+    seller_legal_name = Column(String(255), nullable=True)
+    seller_display_name = Column(String(255), nullable=True)
+    seller_email = Column(String(255), nullable=True)
+    seller_phone = Column(String(50), nullable=True)
+    seller_tax_id = Column(String(50), nullable=True)
+    seller_address = Column(String(500), nullable=True)
+    seller_country = Column(String(100), nullable=True)
     seller_state = Column(String(100), nullable=True)
+    invoice_terms = Column(String(1000), nullable=True)
+    invoice_footer = Column(String(1000), nullable=True)
+    round_off_enabled = Column(Boolean, nullable=False, default=False)
 
     customer_id = Column(Integer, nullable=True)
     customer_name = Column(String(255), nullable=True)

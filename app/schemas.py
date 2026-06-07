@@ -33,13 +33,23 @@ class InvoiceResponse(BaseModel):
     id: int
     invoice_number: Optional[str] = None
     invoice_template_key: Optional[str] = None
+    seller_legal_name: Optional[str] = None
+    seller_display_name: Optional[str] = None
+    seller_email: Optional[str] = None
+    seller_phone: Optional[str] = None
+    seller_tax_id: Optional[str] = None
+    seller_address: Optional[str] = None
+    seller_country: Optional[str] = None
+    seller_state: Optional[str] = None
+    invoice_terms: Optional[str] = None
+    invoice_footer: Optional[str] = None
+    round_off_enabled: bool = False
     order_id: int
     customer_id: Optional[int] = None
     customer_name: Optional[str] = None
     customer_email: Optional[str] = None
     customer_gstin: Optional[str] = None
     customer_place_of_supply: Optional[str] = None
-    seller_state: Optional[str] = None
     subtotal: float
     tax: float
     total: float

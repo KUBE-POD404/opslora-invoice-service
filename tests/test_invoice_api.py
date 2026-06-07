@@ -60,6 +60,16 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
             "default_due_days": 15,
             "default_invoice_template": "opslora_standard",
             "seller_state": "Karnataka",
+            "legal_name": "Acme Seller Pvt Ltd",
+            "display_name": "Acme Seller",
+            "email": "accounts@acme-seller.example",
+            "phone": "+91 90000 11111",
+            "tax_id": "29SELLER1234F1Z1",
+            "address": "99 Market Road, Bengaluru",
+            "country": "India",
+            "default_invoice_terms": "Payment due within 15 days.",
+            "default_invoice_footer": "Goods once sold are subject to Opslora policy.",
+            "round_off_enabled": True,
         }
 
     monkeypatch.setattr("app.services.invoice_service.fetch_order", fake_fetch_order)
@@ -80,6 +90,12 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
         assert invoice["total"] == 288.5
         assert invoice["invoice_number"] == "SMK-000009-000001"
         assert invoice["invoice_template_key"] == "opslora_standard"
+        assert invoice["seller_legal_name"] == "Acme Seller Pvt Ltd"
+        assert invoice["seller_display_name"] == "Acme Seller"
+        assert invoice["seller_tax_id"] == "29SELLER1234F1Z1"
+        assert invoice["invoice_terms"] == "Payment due within 15 days."
+        assert invoice["invoice_footer"] == "Goods once sold are subject to Opslora policy."
+        assert invoice["round_off_enabled"] is True
         assert invoice["customer_gstin"] == "29ABCDE1234F1Z5"
         assert len(invoice["lines"]) == 2
         assert len(invoice["tax_summary"]) == 4

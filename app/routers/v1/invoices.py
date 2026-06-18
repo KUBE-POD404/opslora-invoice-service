@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, status, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import InvoiceCreateRequest, InvoiceResponse, InvoiceStatusUpdate
+from app.schemas import (
+    InvoiceCreateRequest,
+    InvoiceResponse,
+    InvoiceStatusUpdate,
+    InvoiceTemplateResponse,
+)
 
 from app.services.invoice_service import (
     create_invoice,
@@ -13,10 +18,18 @@ from app.services.invoice_service import (
     cancel_invoice,
     update_invoice_status
 )
+from app.services.invoice_templates import list_invoice_templates
 
 from app.dependencies.permissions import require_permission
 
 router = APIRouter(prefix="/invoices", tags=["Invoices"])
+
+
+@router.get("/templates", response_model=list[InvoiceTemplateResponse])
+def list_invoice_templates_api(
+    current_user: Annotated[object, Depends(require_permission("invoice.read"))]
+):
+    return list_invoice_templates()
 
 
 # -----------------------------
@@ -45,6 +58,7 @@ def create_invoice_api(
         auth_header=auth_header,
         discount_type=payload.discount_type if payload else None,
         discount_value=payload.discount_value if payload else 0,
+        invoice_template_key=payload.invoice_template_key if payload else None,
     )
 
 

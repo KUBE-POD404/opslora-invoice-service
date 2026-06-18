@@ -37,7 +37,7 @@ def org_settings(state="Karnataka"):
         "invoice_prefix": "SMK",
         "next_invoice_sequence": 7,
         "default_due_days": 15,
-        "default_invoice_template": "opslora_standard",
+        "default_invoice_template": "opslora_default",
         "seller_state": state,
         "legal_name": "Smoke Metal Works Pvt Ltd",
         "display_name": "Smoke Metal Works",
@@ -68,7 +68,7 @@ def test_create_invoice_calculates_subtotal_tax_total(db_session, monkeypatch, n
     assert invoice.tax == Decimal("38.50")
     assert invoice.total == Decimal("288.50")
     assert invoice.invoice_number == "SMK-000007-000001"
-    assert invoice.invoice_template_key == "opslora_standard"
+    assert invoice.invoice_template_key == "opslora_default"
     assert invoice.seller_state == "Karnataka"
     assert invoice.seller_legal_name == "Smoke Metal Works Pvt Ltd"
     assert invoice.seller_display_name == "Smoke Metal Works"
@@ -109,6 +109,22 @@ def test_create_invoice_uses_igst_for_interstate_supply(db_session, monkeypatch,
         ("IGST", Decimal("5.00")),
         ("IGST", Decimal("18.00")),
     }
+
+
+def test_create_invoice_accepts_template_override(db_session, monkeypatch, no_op_celery):
+    monkeypatch.setattr(invoice_service, "fetch_order", lambda order_id, auth_header: confirmed_order())
+    monkeypatch.setattr(invoice_service, "fetch_organization_settings", lambda auth_header: org_settings())
+
+    invoice = invoice_service.create_invoice(
+        db_session,
+        order_id=10,
+        organization_id=1,
+        created_by_user_id=100,
+        auth_header="Bearer token",
+        invoice_template_key="opslora_tax_detailed",
+    )
+
+    assert invoice.invoice_template_key == "opslora_tax_detailed"
 
 
 def test_invoice_requires_confirmed_order(db_session, monkeypatch, no_op_celery):

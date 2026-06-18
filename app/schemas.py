@@ -3,6 +3,16 @@ from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
 from typing import Optional
 
+
+class InvoiceTemplateResponse(BaseModel):
+    key: str
+    name: str
+    description: str
+    version: str
+    supports_logo: bool
+    supports_tax_summary: bool
+    supports_bank_details: bool
+
 class InvoiceLineResponse(BaseModel):
     id: int
     product_id: Optional[int] = None
@@ -67,6 +77,7 @@ class InvoiceResponse(BaseModel):
 class InvoiceCreateRequest(BaseModel):
     discount_type: Optional[str] = Field(default=None, pattern="^(FLAT|PERCENT)$")
     discount_value: float = 0
+    invoice_template_key: Optional[str] = Field(default=None, min_length=1, max_length=100)
 
 
 class InvoiceStatus(str, Enum):

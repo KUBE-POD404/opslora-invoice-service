@@ -58,7 +58,7 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
             "invoice_prefix": "SMK",
             "next_invoice_sequence": 9,
             "default_due_days": 15,
-            "default_invoice_template": "opslora_standard",
+            "default_invoice_template": "opslora_default",
             "seller_state": "Karnataka",
             "legal_name": "Acme Seller Pvt Ltd",
             "display_name": "Acme Seller",
@@ -94,7 +94,11 @@ def test_invoice_api_create_list_status_and_duplicate_rule(monkeypatch, no_op_ce
         assert invoice["discount_type"] == "FLAT"
         assert invoice["discount_value"] == 10.0
         assert invoice["invoice_number"] == "SMK-000009-000001"
-        assert invoice["invoice_template_key"] == "opslora_standard"
+        assert invoice["invoice_template_key"] == "opslora_default"
+
+        templates_response = client.get("/api/v1/invoices/templates")
+        assert templates_response.status_code == 200
+        assert templates_response.json()[0]["key"] == "opslora_default"
         assert invoice["seller_legal_name"] == "Acme Seller Pvt Ltd"
         assert invoice["seller_display_name"] == "Acme Seller"
         assert invoice["seller_tax_id"] == "29SELLER1234F1Z1"

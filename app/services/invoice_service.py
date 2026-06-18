@@ -9,6 +9,7 @@ from app.utils.service_client import authenticated_get
 from app.core.celery_app import celery
 from app.core.logging_config import request_id_ctx
 from app.core.config import settings
+from app.services.invoice_templates import DEFAULT_TEMPLATE_KEY, get_invoice_template
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def fetch_organization_settings(auth_header: str):
         "invoice_prefix": data.get("invoice_prefix") or "INV",
         "next_invoice_sequence": data.get("next_invoice_sequence") or 1,
         "default_due_days": data.get("default_due_days") or 30,
-        "default_invoice_template": data.get("default_invoice_template") or "opslora_standard",
+        "default_invoice_template": data.get("default_invoice_template") or DEFAULT_TEMPLATE_KEY,
         "seller_state": data.get("state"),
         "legal_name": data.get("legal_name"),
         "display_name": data.get("display_name"),
@@ -131,12 +132,14 @@ def create_invoice(
     auth_header: str,
     discount_type: str | None = None,
     discount_value: Decimal = Decimal("0.00"),
+    invoice_template_key: str | None = None,
 ):
 
     logger.info("Creating invoice", extra={"order_id": order_id})
 
     order_data = fetch_order(order_id, auth_header)
     org_settings = fetch_organization_settings(auth_header)
+    selected_template = get_invoice_template(invoice_template_key or org_settings["default_invoice_template"])
 
     if order_data["status"] != "CONFIRMED":
         raise ConflictException("Invoice can be created only for CONFIRMED orders")
@@ -208,7 +211,7 @@ def create_invoice(
     invoice = Invoice(
         organization_id=organization_id,
         order_id=order_id,
-        invoice_template_key=org_settings["default_invoice_template"],
+        invoice_template_key=selected_template.key,
         seller_legal_name=org_settings.get("legal_name"),
         seller_display_name=org_settings.get("display_name"),
         seller_email=org_settings.get("email"),

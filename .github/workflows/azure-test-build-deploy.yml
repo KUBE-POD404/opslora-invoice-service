@@ -28,7 +28,7 @@ env:
   ACR_NAME: ${{ vars.AZURE_TEST_ACR_NAME }}
   IMAGE_REPOSITORY: opslora-invoice-service
   HELM_REPO: KUBE-POD404/opslora-helm-charts
-  HELM_REF: azure/agic-application-gateway
+  HELM_REF: test/opslora-helm-test
   CHART_PATH: opslora-helm/apps/invoice
   RELEASE_NAME: invoice
   NAMESPACE: opslora-app-ns

@@ -27,11 +27,29 @@ jobs:
           fetch-depth: 0
 
       - name: Require SonarCloud token
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+          if [ -z "${SONAR_TOKEN}" ]; then
             echo "SONAR_TOKEN repository secret is required for SonarCloud."
             exit 1
           fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Generate coverage report
+        run: python -m pytest --cov=app --cov-report=xml
 
       - name: Cache SonarCloud scanner
         uses: actions/cache@v4

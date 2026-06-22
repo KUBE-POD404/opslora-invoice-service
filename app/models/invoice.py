@@ -48,7 +48,7 @@ class Invoice(Base):
 
     status = Column(String(20), nullable=False, default="UNPAID")
     created_by_user_id = Column(Integer, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         CheckConstraint(

@@ -79,7 +79,7 @@ class Settings:
     auth_service_url: str = _secret("AUTH_SERVICE_URL", required=True)
     api_version: str = _secret("API_VERSION", "/api/v1")
     storage_provider: str = _secret("STORAGE_PROVIDER", "local")
-    local_storage_root: str = _secret("LOCAL_STORAGE_ROOT", "/tmp/opslora-storage/invoice-service")
+    local_storage_root: str = _secret("LOCAL_STORAGE_ROOT", "/var/lib/opslora/invoice-service/storage")
     azure_storage_account_url: str = _secret("AZURE_STORAGE_ACCOUNT_URL", "")
     azure_storage_container: str = _secret("AZURE_STORAGE_CONTAINER", "invoice-pdfs")
 

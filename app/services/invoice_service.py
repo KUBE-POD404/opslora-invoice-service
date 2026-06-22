@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 ORDER_SERVICE_URL = settings.order_service_url
 AUTH_SERVICE_URL = settings.auth_service_url
 API_VERSION = settings.api_version
+INVALID_ORDER_RESPONSE = "Invalid order service response"
 
 # -----------------------------
 # FETCH ORDER
@@ -34,16 +35,16 @@ def fetch_order(order_id: int, auth_header: str):
     data = response.json()
     required_fields = ("status", "customer_email", "customer_name", "items")
     if any(data.get(field) in (None, "") for field in required_fields):
-        raise ConflictException("Invalid order service response")
+        raise ConflictException(INVALID_ORDER_RESPONSE)
 
     if not isinstance(data["items"], list) or not data["items"]:
-        raise ConflictException("Invalid order service response")
+        raise ConflictException(INVALID_ORDER_RESPONSE)
 
     for item in data["items"]:
         if item.get("product_name") in (None, ""):
-            raise ConflictException("Invalid order service response")
+            raise ConflictException(INVALID_ORDER_RESPONSE)
         if item.get("quantity") is None or item.get("unit_price") is None:
-            raise ConflictException("Invalid order service response")
+            raise ConflictException(INVALID_ORDER_RESPONSE)
 
     return data
 

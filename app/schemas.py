@@ -1,11 +1,65 @@
 from enum import Enum
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
 from typing import Optional
 
+
+class InvoiceTemplateResponse(BaseModel):
+    key: str
+    name: str
+    description: str
+    version: str
+    supports_logo: bool
+    supports_tax_summary: bool
+    supports_bank_details: bool
+
+class InvoiceLineResponse(BaseModel):
+    id: int
+    product_id: Optional[int] = None
+    sku: Optional[str] = None
+    product_name: str
+    hsn_sac_code: Optional[str] = None
+    unit_of_measure: Optional[str] = None
+    quantity: float
+    unit_price: float
+    tax_rate: float
+    taxable_value: float
+    tax_amount: float
+    line_total: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class InvoiceTaxSummaryResponse(BaseModel):
+    tax_component: str
+    tax_rate: float
+    taxable_value: float
+    tax_amount: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class InvoiceResponse(BaseModel):
     id: int
+    invoice_number: Optional[str] = None
+    invoice_template_key: Optional[str] = None
+    seller_legal_name: Optional[str] = None
+    seller_display_name: Optional[str] = None
+    seller_email: Optional[str] = None
+    seller_phone: Optional[str] = None
+    seller_tax_id: Optional[str] = None
+    seller_address: Optional[str] = None
+    seller_country: Optional[str] = None
+    seller_state: Optional[str] = None
+    invoice_terms: Optional[str] = None
+    invoice_footer: Optional[str] = None
+    round_off_enabled: bool = False
     order_id: int
+    customer_id: Optional[int] = None
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_gstin: Optional[str] = None
+    customer_place_of_supply: Optional[str] = None
     subtotal: float
     tax: float
     total: float
@@ -14,8 +68,16 @@ class InvoiceResponse(BaseModel):
     discount_type: Optional[str] = None
     discount_value: float
     created_at: datetime
+    lines: list[InvoiceLineResponse] = []
+    tax_summary: list[InvoiceTaxSummaryResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class InvoiceCreateRequest(BaseModel):
+    discount_type: Optional[str] = Field(default=None, pattern="^(FLAT|PERCENT)$")
+    discount_value: float = 0
+    invoice_template_key: Optional[str] = Field(default=None, min_length=1, max_length=100)
 
 
 class InvoiceStatus(str, Enum):

@@ -1,10 +1,7 @@
 from celery import Celery
-import os
+from app.core.config import settings
 
-RABBITMQ_URL = os.getenv(
-    "RABBITMQ_URL",
-    "amqp://guest:guest@rabbitmq:5672//"
-)
+RABBITMQ_URL = settings.rabbitmq_url
 
 celery = Celery(
     "invoice_service",

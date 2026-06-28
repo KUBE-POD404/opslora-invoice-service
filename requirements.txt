@@ -10,3 +10,4 @@ requests
 celery
 kombu
 alembic
+reportlab

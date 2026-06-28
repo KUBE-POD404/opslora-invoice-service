@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status, Request
+from fastapi import APIRouter, Depends, status, Request, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -19,6 +19,7 @@ from app.services.invoice_service import (
     update_invoice_status
 )
 from app.services.invoice_templates import list_invoice_templates
+from app.services.invoice_pdf import invoice_pdf_response_bytes
 
 from app.dependencies.permissions import require_permission
 
@@ -76,6 +77,23 @@ def get_invoice_api(
         db,
         invoice_id,
         current_user.org_id
+    )
+
+
+@router.get("/{invoice_id}/download", response_class=Response)
+def download_invoice_pdf_api(
+    invoice_id: int,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[object, Depends(require_permission("invoice.read"))]
+):
+    invoice = get_invoice(db, invoice_id, current_user.org_id)
+    pdf_bytes = invoice_pdf_response_bytes(invoice, request.headers.get("Authorization"))
+    invoice_number = invoice.invoice_number or f"INV-{invoice.id}"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{invoice_number}-opslora-invoice.pdf"'},
     )
 
 

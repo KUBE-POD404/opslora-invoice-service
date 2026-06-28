@@ -8,7 +8,21 @@ from app.database import Base
 from app.models import Invoice, InvoiceLine, InvoiceTaxSummary
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url)
+
+
+def escape_configparser_value(value: str) -> str:
+    """Escape percent signs before writing dynamic values into Alembic config.
+
+    ConfigParser treats percent signs as interpolation markers. Azure MySQL
+    connection strings can contain percent-encoded paths/query values, such as
+    ssl_ca=%2Fetc%2Fssl%2Fcerts%2Fca-certificates.crt, so Alembic config needs
+    literal percent signs escaped as %% before set_main_option().
+    """
+
+    return value.replace("%", "%%")
+
+
+config.set_main_option("sqlalchemy.url", escape_configparser_value(settings.database_url))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

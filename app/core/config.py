@@ -77,6 +77,7 @@ class Settings:
     rabbitmq_url: str = _secret("RABBITMQ_URL", required=True)
     order_service_url: str = _secret("ORDER_SERVICE_URL", required=True)
     auth_service_url: str = _secret("AUTH_SERVICE_URL", required=True)
+    payment_service_url: str = _secret("PAYMENT_SERVICE_URL", "")
     api_version: str = _secret("API_VERSION", "/api/v1")
     storage_provider: str = _secret("STORAGE_PROVIDER", "local")
     local_storage_root: str = _secret("LOCAL_STORAGE_ROOT", "/var/lib/opslora/invoice-service/storage")
